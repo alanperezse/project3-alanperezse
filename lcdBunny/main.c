@@ -41,13 +41,13 @@ void wdt_c_handler() {
   if(state == 0) redrawScreen = 1;
 }
 
-void appleUpdtPos() {
+void appleUpdtState() {
   static char state = 0;
   static char stride = 20;
   
   appleX = 100 - (20 * state);
-  state = ++state % 3;
-  if(state == 0) appleSpawn = 0;
+  if(state == 3) appleSpawn = 0;
+  state = ++state % 4;
 }
 
 void main() {
@@ -69,43 +69,46 @@ void main() {
 
   short slide = 0;
   short noteIdx = 0;
+
   while(1) {
     redrawScreen = 0;
 
     if(bunnyStop) {
+      if(slide != 2) {
+	// Elimiate previous foreground
+	drawBunny(0, 100, slide, 2, COLOR_BLACK);
+	if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_BLACK);
+	slide = 2;
       
-      drawBunny(0, 100, slide, 2, COLOR_BLACK);
-      drawApple(appleX, appleY, 1, COLOR_BLACK);
-      slide = 2;
-      
-      //Background
-      drawStreet();  
+	//Background
+	drawStreet();  
 
-      // Foreground
-      drawBunny(0, 100, slide, 2, COLOR_WHITE);
-      if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_RED);
+	// Foreground
+	drawBunny(0, 100, slide, 2, COLOR_WHITE);
+	if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_RED);
 
-      // Play silence
-      buzzer_set_period(0);
+	// Play silence
+	buzzer_set_period(0);
+      }
     }
     else {
       // Eliminate previous foreground
       drawBunny(0, 100, slide, 2, COLOR_BLACK);
-      drawApple(appleX, appleY, 1, COLOR_BLACK);
+      if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_BLACK);
       slide = ++slide % 2;  //Set next slide
       
       //Background
       drawStreet();
 
+      if(appleSpawn) appleUpdtState();
+      
       // Foreground
-      if(appleSpawn) {
-	appleUpdtPos();
-	drawApple(appleX, appleY, 1, COLOR_RED);
-      }
+      if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_RED);
+
       drawBunny(0, 100, slide, 2, COLOR_WHITE);
       
       // Play next note
-      buzzer_set_period(notes[noteIdx]);
+      // buzzer_set_period(notes[noteIdx]);
       noteIdx = ++noteIdx % 4;
     }
 
@@ -145,7 +148,7 @@ void switch_interrupt_handler_2() {
     buttonDown = 1;
     wasPressed = 1;
     bunnyStop = !bunnyStop;
-    buzzer_set_period(4545);
+    //buzzer_set_period(4545);
   }
 
   if(bunnyStop == 1) return;
