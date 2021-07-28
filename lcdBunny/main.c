@@ -73,13 +73,14 @@ void main() {
   while(1) {
     redrawScreen = 0;
 
+    // Draw the appropiate pixels according to the state of the bunny
     if(bunnyStop) {
-      if(slide != 2) {
+      if(slide != 2) {// Prevents updating screen
 	// Elimiate previous foreground
 	drawBunny(0, 100, slide, 2, COLOR_BLACK);
 	if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_BLACK);
+	
 	slide = 2;
-      
 	//Background
 	drawStreet();  
 
@@ -88,8 +89,10 @@ void main() {
 	if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_RED);
 
 	// Play silence
-	buzzer_set_period(0);
+	buzzer_set_period(4545);
+	noteIdx = 0; // Reset song
       }
+      else buzzer_set_period(0);
     }
     else {
       // Eliminate previous foreground
@@ -108,7 +111,7 @@ void main() {
       drawBunny(0, 100, slide, 2, COLOR_WHITE);
       
       // Play next note
-      // buzzer_set_period(notes[noteIdx]);
+      buzzer_set_period(notes[noteIdx]);
       noteIdx = ++noteIdx % 4;
     }
 
