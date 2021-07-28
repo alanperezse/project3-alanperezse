@@ -7,6 +7,13 @@
 
 
 short redrawScreen = 1;
+short triangleInitX = 100;
+short triangleInitY = 20;
+short triangleCurrX = 100;
+short triangleCurrY = 20;
+short triangleCurrW = 1;
+short triangleInitColor = (31 << 11) | (63 << 5) | (31);
+short triangleCurrColor = (31 << 11) | (63 << 5) | (31);
 
 void interruptsOn(char on) {
   if(on) or_sr(0x8);
@@ -16,6 +23,18 @@ void interruptsOn(char on) {
 void sleepOn(char on) {
   if(on) or_sr(0x10);
   else and_sr(~0x10);
+}
+
+void updateTriangle() {
+  static char state = 0;
+  state = ++state % 16;
+  // Position
+  triangleCurrX = triangleInitX - 1 * state;
+  triangleCurrY = triangleInitY + 1 * state;
+  triangleCurrW = 1 + 2 * state;
+
+  // Color
+  triangleCurrColor = ((31 - 2 * state) << 11) | ((63 - 4 * state) << 5) | (31);;
 }
 
 void wdt_c_handler() {
@@ -43,6 +62,10 @@ void main() {
     slide = ++slide % 2;  //Set next slide
     drawStreet();
     drawBunny(0, 100, slide, 2, COLOR_WHITE);
+
+
+    fillRectangle(triangleCurrX, triangleCurrY, triangleCurrW, 1, triangleCurrColor);
+    updateTriangle();
     
     greenOn(0);
     interruptsOn(1);  //Enable interrupts
