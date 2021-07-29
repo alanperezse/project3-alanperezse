@@ -25,9 +25,9 @@ char appleX = 100;
 char appleY = 113;
 
 
-void interruptsOn(char on) {
-  if(on) or_sr(0x8);
-  else and_sr(~0x8);
+void interruptButtonsOn(char on) {
+  if(on) P2IE |= SWITCHES;
+  else P2IE &= ~SWITCHES;
 }
 
 void sleepOn(char on) {
@@ -57,8 +57,8 @@ void main() {
   buzzer_init();
   lcd_init(); 
   enableWDTInterrupts();      /**< enable periodic interrupt */
-  interruptsOn(1);	              /**< GIE (enable interrupts) */
   greenOn(1);
+  or_sr(0x8);
   
   clearScreen(COLOR_BLACK);
   drawString5x7(20, 20, "STOP?", COLOR_GREEN, COLOR_BLACK);
@@ -76,48 +76,52 @@ void main() {
     // Draw the appropiate pixels according to the state of the bunny
     if(bunnyStop) {
       if(slide != 2) {// Prevents updating screen
-	// Elimiate previous foreground
+	//Play pause note
+	buzzer_set_period(4545);
+
+	//Eliminate previous foreground
 	drawBunny(0, 100, slide, 2, COLOR_BLACK);
 	if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_BLACK);
-	
+
+	// Update slides/states
 	slide = 2;
+	noteIdx = 0;
+
 	//Background
 	drawStreet();  
 
-	// Foreground
+	//Foreground
 	drawBunny(0, 100, slide, 2, COLOR_WHITE);
 	if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_RED);
-
-	// Play silence
-	buzzer_set_period(4545);
-	noteIdx = 0; // Reset song
       }
+      
       else buzzer_set_period(0);
     }
+    
     else {
-      // Eliminate previous foreground
+      //Play next note
+      buzzer_set_period(notes[noteIdx]);
+
+      //Eliminate previous foreground
       drawBunny(0, 100, slide, 2, COLOR_BLACK);
       if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_BLACK);
-      slide = ++slide % 2;  //Set next slide
+
+      //Update slides/states
+      slide = ++slide % 2;
+      if(appleSpawn) appleUpdtState();
+      noteIdx = ++noteIdx % 4;
       
       //Background
       drawStreet();
-
-      if(appleSpawn) appleUpdtState();
       
-      // Foreground
+      //Foreground
       if(appleSpawn) drawApple(appleX, appleY, 1, COLOR_RED);
-
       drawBunny(0, 100, slide, 2, COLOR_WHITE);
-      
-      // Play next note
-      buzzer_set_period(notes[noteIdx]);
-      noteIdx = ++noteIdx % 4;
     }
 
     // Prepare to sleep
     greenOn(0);
-    interruptsOn(1);  //Enable interrupts
+    interruptButtonsOn(1);  //Enable interrupts SW
     sleepOn(1);   //Sleep
 
 
@@ -126,8 +130,8 @@ void main() {
 
     
 
-    // Stretching
-    interruptsOn(0);  //Disable interrupts
+    // After waking up
+    interruptButtonsOn(0);  //Disable interrupts SW
     greenOn(1);
     wasPressed = 0;
   }
@@ -151,7 +155,6 @@ void switch_interrupt_handler_2() {
     buttonDown = 1;
     wasPressed = 1;
     bunnyStop = !bunnyStop;
-    //buzzer_set_period(4545);
   }
 
   if(bunnyStop == 1) return;
